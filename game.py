@@ -13,20 +13,70 @@ class Player(pygame.sprite.Sprite):
     
     def movement(self):
         keys = pygame.key.get_pressed()
+        ball = ballGroup.sprite
         if keys[pygame.K_w] or keys[pygame.K_UP]:
             self.rect.y -= self.speed
+            if ball.isColliding:
+                ball.rect.y -= self.speed
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:
             self.rect.y += self.speed
+            if ball.isColliding:
+                ball.rect.y += self.speed
     
     def outofWIndow(self):
         if self.rect.top < 10:
             self.rect.top = 10
         if self.rect.bottom > w_h - 10:
             self.rect.bottom = w_h - 10
-              
+    
+    def returnRect(self):
+        return self.rect
+    
     def update(self):
         self.movement()
         self.outofWIndow()
+    
+class Ball(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.transform.scale_by(pygame.image.load("sprites/ball.png"), 0.45)
+        self.rect = self.image.get_rect(center = (w_w/2, w_h/2))
+        self.speedX = 5
+        self.speedY = 5
+        self.playerHoldTimer = 0
+        self.isColliding = False
+        self.startDirectionX = choice([1, -1])
+        self.startDirectionY = choice([1, -1])
+    
+    def movement(self):
+        self.rect.x += self.speedX * self.startDirectionX
+        if not(self.isColliding):
+            self.rect.y += self.speedY * self.startDirectionY
+    
+    def collisions(self):
+        if self.rect.top < 0 or self.rect.bottom > w_h:
+            self.speedY *= -1
+        
+        if self.rect.left < 0 or self.rect.right > w_w:
+            self.speedX *= -1
+            
+        player = playerGroup.sprite
+        
+        if self.rect.colliderect(player.rect):
+            self.isColliding = True
+            collision = self.rect.clip(player.rect)
+            self.playerHoldTimer += 1
+            self.rect.midleft = collision.midright
+            if self.playerHoldTimer == 6:       
+                self.speedX *= -1
+                print(self.playerHoldTimer)
+                self.playerHoldTimer = 0
+        else:
+            self.isColliding = False
+            
+    def update(self):
+        self.movement()
+        self.collisions()
         
 pygame.init()
 
@@ -41,6 +91,9 @@ clock = pygame.time.Clock()
 # SPRITES GROUPS
 playerGroup = pygame.sprite.GroupSingle()
 playerGroup.add(Player())
+
+ballGroup = pygame.sprite.GroupSingle()
+ballGroup.add(Ball())
 
 # OTHER ELEMENTS
 section = pygame.transform.scale_by(pygame.image.load("sprites/section.png"), 1.7)
@@ -61,8 +114,8 @@ pause_text = texts.makeText("PAUSADO", 100, (w_w/2, 100), screen)
 return_text = texts.makeText("Retomar", 35, (return_button.rect.centerx, return_button.rect.bottom + 17), screen)
 
 # GAMESTATES
-home = True
-gameMode_points = False
+home = False
+gameMode_points = True
 in_points = False
 gameMode_survive = False
 in_survive = False
@@ -98,6 +151,8 @@ while True:
         pygame.draw.line(screen, "white", (w_w/2, 0), (w_w/2, w_h), 3)
         playerGroup.draw(screen)
         playerGroup.update()
+        ballGroup.draw(screen)
+        ballGroup.update()
         if pause_button.isClicked() == True:
             gameMode_points = False
             pause = True
@@ -108,6 +163,8 @@ while True:
         pygame.draw.line(screen, "white", (w_w/2, 0), (w_w/2, w_h), 3)
         playerGroup.draw(screen)
         playerGroup.update()
+        ballGroup.draw(screen)
+        ballGroup.update()
         if pause_button.isClicked() == True:
             gameMode_survive = False
             pause = True
