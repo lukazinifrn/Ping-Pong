@@ -9,7 +9,7 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.Surface((10, 100))
         self.image.fill("white")
         self.rect = self.image.get_rect(center = (15, w_h/2))
-        self.speed = 5
+        self.speed = 7
     
     def movement(self):
         keys = pygame.key.get_pressed()
@@ -70,9 +70,6 @@ class Ball(pygame.sprite.Sprite):
             self.DirectionY *= -1
             self.speedMultiplierX += 0.01
             self.speedMultiplierY += 0.012
-        
-        if self.rect.left < 0 or self.rect.right > w_w:
-            self.DirectionX *= -1
             
         player = playerGroup.sprite
         bot = botGroup.sprite
@@ -132,7 +129,7 @@ class Bot(pygame.sprite.Sprite):
         self.image = pygame.Surface((10, 100))
         self.image.fill("white")
         self.rect = self.image.get_rect(center = (w_w-15, w_h/2)) 
-        self.speed = 5
+        self.speed = 7
         self.side = choice([-1, 1])
         
     def movement(self):
@@ -164,7 +161,29 @@ class Bot(pygame.sprite.Sprite):
     def update(self):
         self.movement()
         self.outofWIndow()
-            
+
+def getPontuation():
+    global botPoints, playerPoints, pontuation_text
+    ball = ballGroup.sprite
+    if ball.rect.x <= 0:
+        botPoints += 1
+        
+    if ball.rect.x >= w_w:
+        playerPoints += 1
+
+    pontuation_text = texts.makeText(f"{playerPoints} - {botPoints}", 100, (w_w/2, 70), screen)
+
+def restartBall():
+    ball = ballGroup.sprite
+    if ball.rect.x <= 0 or ball.rect.x >= w_w:
+        ball.rect.center = (w_w/2, w_h/2)
+        ball.DirectionX = choice([1, -1])
+        ball.DirectionY = choice([1, -1])
+        ball.speedX = 5
+        ball.speedY = 5
+        ball.speedMultiplierX = 1
+        ball.speedMultiplierY = 1
+
 pygame.init()
 
 w_w = 1000
@@ -174,6 +193,10 @@ screen = pygame.display.set_mode((w_w, w_h))
 pygame.display.set_caption("Ping-Pong")
 pygame.display.set_icon(icon)
 clock = pygame.time.Clock()
+
+# VARIABLES
+playerPoints = 0
+botPoints = 0
 
 # SPRITES GROUPS
 playerGroup = pygame.sprite.GroupSingle()
@@ -202,6 +225,7 @@ gameMode_points_text = texts.makeText("Points", 60, (gameMode_points_button.rect
 gameMode_survive_text = texts.makeText("Survive", 60, (gameMode_survive_button.rect.centerx, 380), screen)
 pause_text = texts.makeText("PAUSADO", 100, (w_w/2, 100), screen)
 return_text = texts.makeText("Retomar", 35, (return_button.rect.centerx, return_button.rect.bottom + 17), screen)
+pontuation_text = texts.makeText(f"{playerPoints} - {botPoints}", 100, (w_w/2, 70), screen)
 
 # GAMESTATES
 home = True
@@ -238,6 +262,7 @@ while True:
         in_points = True
         screen.fill("black") 
         pause_button.showButton()
+        pontuation_text.showText()
         pygame.draw.line(screen, "white", (w_w/2, 0), (w_w/2, w_h), 3)
         playerGroup.draw(screen)
         playerGroup.update()
@@ -245,6 +270,8 @@ while True:
         ballGroup.update()
         botGroup.draw(screen)
         botGroup.update()
+        getPontuation()
+        restartBall()
         if pause_button.isClicked() == True:
             gameMode_points = False
             pause = True
